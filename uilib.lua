@@ -1,200 +1,155 @@
-local library = {
-    windowcount = 0;
-}
+-- Custom UI Library Code (Enhanced Version)
+local UI = {}
+local activeWindow
+local minimized = false
 
-local dragger = {};
-local resizer = {};
-
-do
-    local mouse = game:GetService("Players").LocalPlayer:GetMouse();
-    local inputService = game:GetService('UserInputService');
-    local heartbeat = game:GetService("RunService").Heartbeat;
-    
-    function dragger.new(frame)
-        local s, event = pcall(function()
-            return frame.MouseEnter
-        end)
-
-        if s then
-            frame.Active = true;
-
-            event:connect(function()
-                local input;
-                input = frame.InputBegan:connect(function(key)
-                    if key.UserInputType == Enum.UserInputType.MouseButton1 or key.UserInputType == Enum.UserInputType.Touch then
-                        local objectPosition = Vector2.new(mouse.X - frame.AbsolutePosition.X, mouse.Y - frame.AbsolutePosition.Y);
-                        while heartbeat:wait() and inputService:IsMouseButtonPressed(Enum.UserInputType.MouseButton1) do
-                            frame:TweenPosition(UDim2.new(0, mouse.X - objectPosition.X + (frame.Size.X.Offset * frame.AnchorPoint.X), 0, mouse.Y - objectPosition.Y + (frame.Size.Y.Offset * frame.AnchorPoint.Y)), 'Out', 'Quad', 0.1, true);
-                        end
-                    end
-                end)
-
-                local leave;
-                leave = frame.MouseLeave:connect(function()
-                    input:disconnect();
-                    leave:disconnect();
-                end)
-            end)
-        end
+-- Utility to create instances
+function UI:Create(instanceType, properties)
+    local instance = Instance.new(instanceType)
+    for property, value in pairs(properties) do
+        instance[property] = value
     end
-
-    function resizer.new(p, s)
-        p:GetPropertyChangedSignal('AbsoluteSize'):connect(function()
-            s.Size = UDim2.new(s.Size.X.Scale, s.Size.X.Offset, s.Size.Y.Scale, p.AbsoluteSize.Y);
-        end)
-    end
+    return instance
 end
 
-local defaults = {
-    txtcolor = Color3.fromRGB(255, 255, 255),
-    underline = Color3.fromRGB(0, 255, 140),
-    barcolor = Color3.fromRGB(40, 40, 40),
-    bgcolor = Color3.fromRGB(30, 30, 30),
-}
-
-function library:Create(class, props)
-    local object = Instance.new(class);
-
-    for i, prop in next, props do
-        if i ~= "Parent" then
-            object[i] = prop;
-        end
-    end
-
-    object.Parent = props.Parent;
-    return object;
-end
-
-function library:CreateWindow(options)
-    assert(options.text, "no name");
-    local window = {
-        count = 0;
-        toggles = {},
-        closed = false;
-    }
-
-    local options = options or {};
-    setmetatable(options, {__index = defaults})
-
-    self.windowcount = self.windowcount + 1;
-
-    library.gui = library.gui or self:Create("ScreenGui", {Name = "UILibrary", Parent = game:GetService("CoreGui")})
+-- Window Setup (with Tabs, Close & Minimize Button, Console)
+function UI:CreateWindow(title)
+    -- Main ScreenGui window setup
+    local window = self:Create("ScreenGui", {
+        Name = title,
+        DisplayOrder = 100,
+        Enabled = true,
+    })
+    activeWindow = window
     
-    window.frame = self:Create("Frame", {
-        Name = options.text;
-        Parent = self.gui,
-        Active = true,
-        BackgroundTransparency = 0,
-        Size = UDim2.new(0, 190, 0, 30),
-        Position = UDim2.new(0, (15 + ((200 * self.windowcount) - 200)), 0, 15),
-        BackgroundColor3 = options.barcolor,
-        BorderSizePixel = 0;
+    -- Window frame
+    local windowFrame = self:Create("Frame", {
+        Parent = window,
+        Position = UDim2.new(0.5, -150, 0.5, -200),
+        Size = UDim2.new(0, 300, 0, 400),
+        BackgroundColor3 = Color3.fromRGB(35, 35, 35),
+        BorderSizePixel = 0,
+        Visible = not minimized
+    })
+    
+    -- Title bar with Close and Minimize buttons
+    local titleBar = self:Create("Frame", {
+        Parent = windowFrame,
+        Size = UDim2.new(1, 0, 0, 30),
+        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+    })
+    
+    local titleLabel = self:Create("TextLabel", {
+        Parent = titleBar,
+        Position = UDim2.new(0, 0, 0, 0),
+        Size = UDim2.new(0.8, 0, 1, 0),
+        Text = title,
+        TextSize = 24,
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        TextXAlignment = Enum.TextXAlignment.Center
     })
 
-    window.background = self:Create('Frame', {
-        Name = 'Background';
-        Parent = window.frame,
-        BorderSizePixel = 0;
-        BackgroundColor3 = options.bgcolor,
-        Position = UDim2.new(0, 0, 1, 0),
-        Size = UDim2.new(1, 0, 0, 25),
-        ClipsDescendants = true;
+    -- Close button
+    local closeButton = self:Create("TextButton", {
+        Parent = titleBar,
+        Position = UDim2.new(0.9, 0, 0, 0),
+        Size = UDim2.new(0.1, 0, 1, 0),
+        Text = "X",
+        TextColor3 = Color3.fromRGB(255, 0, 0),
+        BackgroundColor3 = Color3.fromRGB(35, 35, 35),
+        TextSize = 18,
     })
-
-    window.container = self:Create('Frame', {
-        Name = 'Container';
-        Parent = window.frame,
-        BorderSizePixel = 0;
-        BackgroundColor3 = options.bgcolor,
-        Position = UDim2.new(0, 0, 1, 0),
-        Size = UDim2.new(1, 0, 0, 25),
-        ClipsDescendants = true;
-    })
-
-    window.organizer = self:Create('UIListLayout', {
-        Name = 'Sorter';
-        SortOrder = Enum.SortOrder.LayoutOrder;
-        Parent = window.container;
-    })
-
-    window.padder = self:Create('UIPadding', {
-        Name = 'Padding';
-        PaddingLeft = UDim.new(0, 10);
-        PaddingTop = UDim.new(0, 5);
-        Parent = window.container;
-    })
-    self:Create("Frame", {
-        Name = 'Underline';
-        Size = UDim2.new(1, 0, 0, 1),
-        Position = UDim2.new(0, 0, 1, -1),
-        BorderSizePixel = 0;
-        BackgroundColor3 = options.underline;
-        Parent = window.frame
-    })
-
-    local togglebutton = self:Create("TextButton", {
-        Name = 'Toggle';
-        ZIndex = 2,
-        BackgroundTransparency = 1;
-        Position = UDim2.new(1, -25, 0, 0),
-        Size = UDim2.new(0, 25, 1, 0),
-        Text = "-",
-        TextSize = 17,
-        TextColor3 = options.txtcolor,
-        Font = Enum.Font.FredokaOne;
-        Parent = window.frame,
-    })
-    togglebutton.MouseButton1Click:connect(function()
-        window.closed = not window.closed
-        togglebutton.Text = (window.closed and "+" or "-")
-        if window.closed then
-            window:Resize(true, UDim2.new(1, 0, 0, 0))
-        else
-            window:Resize(true)
-        end
+    
+    closeButton.MouseButton1Click:Connect(function()
+        window:Destroy()
     end)
 
-    self:Create("TextLabel", {
-        Size = UDim2.new(1, 0, 1, 0),
-        BackgroundTransparency = 1;
-        BorderSizePixel = 0;
-        TextColor3 = options.txtcolor,
-        TextColor3 = (options.bartextcolor or Color3.fromRGB(255, 255, 255));
-        TextSize = 17,
-        Font = Enum.Font.FredokaOne;
-        Text = options.text or "window",
-        Name = "Window",
-        Parent = window.frame,
+    -- Minimize button
+    local minimizeButton = self:Create("TextButton", {
+        Parent = titleBar,
+        Position = UDim2.new(0.8, 0, 0, 0),
+        Size = UDim2.new(0.1, 0, 1, 0),
+        Text = "_",
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        BackgroundColor3 = Color3.fromRGB(35, 35, 35),
+        TextSize = 18,
     })
+    
+    minimizeButton.MouseButton1Click:Connect(function()
+        minimized = true
+        windowFrame.Visible = false
+        self:ShowOpenButton()  -- Show open button when minimized
+    end)
 
-    -- Dragger and Resizer Setup
-    dragger.new(window.frame)
-    resizer.new(window.background, window.container);
-
-    local function getSize()
-        local ySize = 0;
-        for i, object in next, window.container:GetChildren() do
-            if (not object:IsA('UIListLayout')) and (not object:IsA('UIPadding')) then
-                ySize = ySize + object.AbsoluteSize.Y
-            end
-        end
-        return UDim2.new(1, 0, 0, ySize + 10)
-    end
-
-    function window:Resize(tween, change)
-        local size = change or getSize()
-        self.container.ClipsDescendants = true;
-
-        if tween then
-            self.background:TweenSize(size, "Out", "Sine", 0.5, true)
-        else
-            self.background.Size = size
-        end
-    end
-
-    -- Add other functional methods like AddButton, AddLabel, etc.
-   
-    return window
+    return window, windowFrame
 end
 
-return library
+-- Open Button (used after minimizing the window)
+function UI:ShowOpenButton()
+    local openButton = self:Create("TextButton", {
+        Parent = activeWindow,
+        Position = UDim2.new(0.5, -50, 0.2, 0),  -- Positioned in the center but a little up
+        Size = UDim2.new(0, 100, 0, 40),
+        Text = "Open UI",
+        BackgroundColor3 = Color3.fromRGB(0, 255, 0),
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+    })
+    
+    openButton.MouseButton1Click:Connect(function()
+        minimized = false
+        activeWindow:ClearAllChildren()
+        self:CreateWindow("Sample UI Window") -- reopen the main window UI with "Sample UI Window"
+        openButton:Destroy()
+    end)
+end
+
+-- Adding a Tab
+function UI:AddTab(windowFrame, tabName)
+    local tab = self:Create("Frame", {
+        Parent = windowFrame,
+        Size = UDim2.new(0, 300, 0, 50),
+        BackgroundColor3 = Color3.fromRGB(45, 45, 45),
+    })
+    
+    local tabButton = self:Create("TextButton", {
+        Parent = tab,
+        Size = UDim2.new(1, 0, 1, 0),
+        Text = tabName,
+        TextSize = 20,
+        BackgroundColor3 = Color3.fromRGB(0, 255, 0),
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+    })
+    
+    return tab
+end
+
+-- Console
+function UI:CreateConsole(windowFrame)
+    local consoleFrame = self:Create("ScrollingFrame", {
+        Parent = windowFrame,
+        Position = UDim2.new(0, 0, 0.9, 0),
+        Size = UDim2.new(1, 0, 0.1, 0),
+        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
+        BorderSizePixel = 0,
+        ScrollingDirection = Enum.ScrollingDirection.Y,
+        CanvasSize = UDim2.new(0, 0, 0, 1000),
+        ScrollBarThickness = 8
+    })
+    
+    local outputText = self:Create("TextLabel", {
+        Parent = consoleFrame,
+        Size = UDim2.new(1, 0, 1, 0),
+        Text = "",
+        TextSize = 18,
+        TextColor3 = Color3.fromRGB(255, 255, 255),
+        TextWrapped = true,
+    })
+
+    function UI:AddToConsole(message)
+        outputText.Text = outputText.Text .. message .. "\n"
+    end
+
+    return consoleFrame
+end
+
+return UI

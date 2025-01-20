@@ -6,10 +6,10 @@ local function CreateUI()
     window.Name = "UIWindow"
     window.Parent = game.CoreGui
 
-    -- Main UI frame
+    -- Main UI frame, adjusting height to make it smaller
     local mainFrame = Instance.new("Frame")
-    mainFrame.Size = UDim2.new(0, 400, 0, 600)
-    mainFrame.Position = UDim2.new(0.5, -200, 0.5, -300)
+    mainFrame.Size = UDim2.new(0, 300, 0, 400)  -- Made it smaller
+    mainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
     mainFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     mainFrame.BorderSizePixel = 0
     mainFrame.Parent = window
@@ -22,10 +22,10 @@ local function CreateUI()
     minimizeButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
     minimizeButton.Parent = mainFrame
 
-    -- Console tab for messages (increased console size and colorizing it)
+    -- Console tab for messages
     local consoleTab = Instance.new("Frame")
-    consoleTab.Size = UDim2.new(1, 0, 0.3, 0)
-    consoleTab.Position = UDim2.new(0, 0, 0.7, 0)
+    consoleTab.Size = UDim2.new(1, 0, 0.25, 0)  -- Made the console smaller
+    consoleTab.Position = UDim2.new(0, 0, 0.75, 0)
     consoleTab.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
     consoleTab.Visible = true
     consoleTab.Parent = mainFrame
@@ -48,12 +48,14 @@ local function CreateUI()
         mainFrame.Visible = uiVisible
     end)
 
-    -- Add toggle functions for creating toggle buttons, dropdowns, etc.
+    -- Store the UI elements in the library for later access
+    library.mainFrame = mainFrame
+    library.consoleTextBox = consoleTextBox
 
     -- Create a toggle function
     function library:AddToggle(name, callback)
         local toggleFrame = Instance.new("Frame")
-        toggleFrame.Size = UDim2.new(1, 0, 0, 50)
+        toggleFrame.Size = UDim2.new(1, 0, 0, 40)  -- Adjusted the size to be more compact
         toggleFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
         toggleFrame.Parent = mainFrame
 
@@ -81,7 +83,7 @@ local function CreateUI()
     -- Create a dropdown function for selections
     function library:AddDropdown(name, options, callback)
         local dropdownFrame = Instance.new("Frame")
-        dropdownFrame.Size = UDim2.new(1, 0, 0, 50)
+        dropdownFrame.Size = UDim2.new(1, 0, 0, 40)  -- Made it more compact
         dropdownFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
         dropdownFrame.Parent = mainFrame
 
@@ -109,7 +111,7 @@ local function CreateUI()
 
         for _, option in ipairs(options) do
             local optionButton = Instance.new("TextButton")
-            optionButton.Size = UDim2.new(1, 0, 0, 50)
+            optionButton.Size = UDim2.new(1, 0, 0, 30)  -- Adjusted height of options
             optionButton.Text = option
             optionButton.TextSize = 14
             optionButton.BackgroundColor3 = Color3.fromRGB(90, 90, 90)

@@ -1,155 +1,140 @@
--- Custom UI Library Code (Enhanced Version)
-local UI = {}
-local activeWindow
-local minimized = false
+local library = {}
 
--- Utility to create instances
-function UI:Create(instanceType, properties)
-    local instance = Instance.new(instanceType)
-    for property, value in pairs(properties) do
-        instance[property] = value
-    end
-    return instance
-end
+local function CreateUI()
+    -- Create the main window container
+    local window = Instance.new("ScreenGui")
+    window.Name = "UIWindow"
+    window.Parent = game.CoreGui
 
--- Window Setup (with Tabs, Close & Minimize Button, Console)
-function UI:CreateWindow(title)
-    -- Main ScreenGui window setup
-    local window = self:Create("ScreenGui", {
-        Name = title,
-        DisplayOrder = 100,
-        Enabled = true,
-    })
-    activeWindow = window
-    
-    -- Window frame
-    local windowFrame = self:Create("Frame", {
-        Parent = window,
-        Position = UDim2.new(0.5, -150, 0.5, -200),
-        Size = UDim2.new(0, 300, 0, 400),
-        BackgroundColor3 = Color3.fromRGB(35, 35, 35),
-        BorderSizePixel = 0,
-        Visible = not minimized
-    })
-    
-    -- Title bar with Close and Minimize buttons
-    local titleBar = self:Create("Frame", {
-        Parent = windowFrame,
-        Size = UDim2.new(1, 0, 0, 30),
-        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-    })
-    
-    local titleLabel = self:Create("TextLabel", {
-        Parent = titleBar,
-        Position = UDim2.new(0, 0, 0, 0),
-        Size = UDim2.new(0.8, 0, 1, 0),
-        Text = title,
-        TextSize = 24,
-        TextColor3 = Color3.fromRGB(255, 255, 255),
-        TextXAlignment = Enum.TextXAlignment.Center
-    })
+    -- Main UI frame
+    local mainFrame = Instance.new("Frame")
+    mainFrame.Size = UDim2.new(0, 400, 0, 600)
+    mainFrame.Position = UDim2.new(0.5, -200, 0.5, -300)
+    mainFrame.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+    mainFrame.BorderSizePixel = 0
+    mainFrame.Parent = window
 
-    -- Close button
-    local closeButton = self:Create("TextButton", {
-        Parent = titleBar,
-        Position = UDim2.new(0.9, 0, 0, 0),
-        Size = UDim2.new(0.1, 0, 1, 0),
-        Text = "X",
-        TextColor3 = Color3.fromRGB(255, 0, 0),
-        BackgroundColor3 = Color3.fromRGB(35, 35, 35),
-        TextSize = 18,
-    })
-    
-    closeButton.MouseButton1Click:Connect(function()
-        window:Destroy()
-    end)
+    -- Minimize Button
+    local minimizeButton = Instance.new("TextButton")
+    minimizeButton.Text = "_"
+    minimizeButton.Size = UDim2.new(0, 30, 0, 30)
+    minimizeButton.Position = UDim2.new(1, -35, 0, 5)
+    minimizeButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    minimizeButton.Parent = mainFrame
 
-    -- Minimize button
-    local minimizeButton = self:Create("TextButton", {
-        Parent = titleBar,
-        Position = UDim2.new(0.8, 0, 0, 0),
-        Size = UDim2.new(0.1, 0, 1, 0),
-        Text = "_",
-        TextColor3 = Color3.fromRGB(255, 255, 255),
-        BackgroundColor3 = Color3.fromRGB(35, 35, 35),
-        TextSize = 18,
-    })
-    
+    -- Console tab for messages (increased console size and colorizing it)
+    local consoleTab = Instance.new("Frame")
+    consoleTab.Size = UDim2.new(1, 0, 0.3, 0)
+    consoleTab.Position = UDim2.new(0, 0, 0.7, 0)
+    consoleTab.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+    consoleTab.Visible = true
+    consoleTab.Parent = mainFrame
+
+    -- Text box for console output
+    local consoleTextBox = Instance.new("TextBox")
+    consoleTextBox.Size = UDim2.new(1, 0, 1, 0)
+    consoleTextBox.BackgroundTransparency = 1
+    consoleTextBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+    consoleTextBox.TextSize = 14
+    consoleTextBox.TextWrap = true
+    consoleTextBox.Text = ""
+    consoleTextBox.ClearTextOnFocus = false
+    consoleTextBox.Parent = consoleTab
+
+    -- Hide and Show the UI on minimize button click
+    local uiVisible = true
     minimizeButton.MouseButton1Click:Connect(function()
-        minimized = true
-        windowFrame.Visible = false
-        self:ShowOpenButton()  -- Show open button when minimized
+        uiVisible = not uiVisible
+        mainFrame.Visible = uiVisible
     end)
 
-    return window, windowFrame
-end
+    -- Add toggle functions for creating toggle buttons, dropdowns, etc.
 
--- Open Button (used after minimizing the window)
-function UI:ShowOpenButton()
-    local openButton = self:Create("TextButton", {
-        Parent = activeWindow,
-        Position = UDim2.new(0.5, -50, 0.2, 0),  -- Positioned in the center but a little up
-        Size = UDim2.new(0, 100, 0, 40),
-        Text = "Open UI",
-        BackgroundColor3 = Color3.fromRGB(0, 255, 0),
-        TextColor3 = Color3.fromRGB(255, 255, 255),
-    })
-    
-    openButton.MouseButton1Click:Connect(function()
-        minimized = false
-        activeWindow:ClearAllChildren()
-        self:CreateWindow("Sample UI Window") -- reopen the main window UI with "Sample UI Window"
-        openButton:Destroy()
-    end)
-end
+    -- Create a toggle function
+    function library:AddToggle(name, callback)
+        local toggleFrame = Instance.new("Frame")
+        toggleFrame.Size = UDim2.new(1, 0, 0, 50)
+        toggleFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+        toggleFrame.Parent = mainFrame
 
--- Adding a Tab
-function UI:AddTab(windowFrame, tabName)
-    local tab = self:Create("Frame", {
-        Parent = windowFrame,
-        Size = UDim2.new(0, 300, 0, 50),
-        BackgroundColor3 = Color3.fromRGB(45, 45, 45),
-    })
-    
-    local tabButton = self:Create("TextButton", {
-        Parent = tab,
-        Size = UDim2.new(1, 0, 1, 0),
-        Text = tabName,
-        TextSize = 20,
-        BackgroundColor3 = Color3.fromRGB(0, 255, 0),
-        TextColor3 = Color3.fromRGB(255, 255, 255),
-    })
-    
-    return tab
-end
+        local label = Instance.new("TextLabel")
+        label.Text = name
+        label.Size = UDim2.new(0, 100, 1, 0)
+        label.BackgroundTransparency = 1
+        label.TextColor3 = Color3.fromRGB(255, 255, 255)
+        label.Parent = toggleFrame
 
--- Console
-function UI:CreateConsole(windowFrame)
-    local consoleFrame = self:Create("ScrollingFrame", {
-        Parent = windowFrame,
-        Position = UDim2.new(0, 0, 0.9, 0),
-        Size = UDim2.new(1, 0, 0.1, 0),
-        BackgroundColor3 = Color3.fromRGB(0, 0, 0),
-        BorderSizePixel = 0,
-        ScrollingDirection = Enum.ScrollingDirection.Y,
-        CanvasSize = UDim2.new(0, 0, 0, 1000),
-        ScrollBarThickness = 8
-    })
-    
-    local outputText = self:Create("TextLabel", {
-        Parent = consoleFrame,
-        Size = UDim2.new(1, 0, 1, 0),
-        Text = "",
-        TextSize = 18,
-        TextColor3 = Color3.fromRGB(255, 255, 255),
-        TextWrapped = true,
-    })
+        local toggleButton = Instance.new("TextButton")
+        toggleButton.Text = "OFF"
+        toggleButton.Size = UDim2.new(0, 80, 1, 0)
+        toggleButton.Position = UDim2.new(0.8, 0, 0, 0)
+        toggleButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+        toggleButton.Parent = toggleFrame
 
-    function UI:AddToConsole(message)
-        outputText.Text = outputText.Text .. message .. "\n"
+        toggleButton.MouseButton1Click:Connect(function()
+            local state = toggleButton.Text == "OFF"
+            toggleButton.Text = state and "ON" or "OFF"
+            callback(state)
+        end)
     end
 
-    return consoleFrame
+    -- Create a dropdown function for selections
+    function library:AddDropdown(name, options, callback)
+        local dropdownFrame = Instance.new("Frame")
+        dropdownFrame.Size = UDim2.new(1, 0, 0, 50)
+        dropdownFrame.BackgroundColor3 = Color3.fromRGB(70, 70, 70)
+        dropdownFrame.Parent = mainFrame
+
+        local label = Instance.new("TextLabel")
+        label.Text = name
+        label.Size = UDim2.new(0, 100, 1, 0)
+        label.BackgroundTransparency = 1
+        label.TextColor3 = Color3.fromRGB(255, 255, 255)
+        label.Parent = dropdownFrame
+
+        local dropdownButton = Instance.new("TextButton")
+        dropdownButton.Text = "Select"
+        dropdownButton.Size = UDim2.new(0, 80, 1, 0)
+        dropdownButton.Position = UDim2.new(0.8, 0, 0, 0)
+        dropdownButton.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+        dropdownButton.Parent = dropdownFrame
+
+        local optionList = Instance.new("ScrollingFrame")
+        optionList.Size = UDim2.new(1, 0, 0, 0)
+        optionList.Position = UDim2.new(0, 0, 1, 0)
+        optionList.BackgroundTransparency = 1
+        optionList.ScrollBarThickness = 4
+        optionList.Visible = false
+        optionList.Parent = dropdownFrame
+
+        for _, option in ipairs(options) do
+            local optionButton = Instance.new("TextButton")
+            optionButton.Size = UDim2.new(1, 0, 0, 50)
+            optionButton.Text = option
+            optionButton.TextSize = 14
+            optionButton.BackgroundColor3 = Color3.fromRGB(90, 90, 90)
+            optionButton.Parent = optionList
+
+            optionButton.MouseButton1Click:Connect(function()
+                dropdownButton.Text = option
+                optionList.Visible = false
+                callback(option)
+            end)
+        end
+
+        dropdownButton.MouseButton1Click:Connect(function()
+            optionList.Visible = not optionList.Visible
+        end)
+    end
+
+    -- Function to add the console log output
+    function library:Log(message)
+        consoleTextBox.Text = consoleTextBox.Text .. "\n" .. message
+        consoleTextBox.Text = consoleTextBox.Text:sub(1, 2000) -- Limit to last 2000 characters to avoid overflow
+    end
+
+    return window
 end
 
-return UI
+library.CreateWindow = CreateUI
+return library
